@@ -122,7 +122,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Pranshu1018/Code-Nexus.git
+   git clone https://github.com/Pranshu1018/CodeNexus.git
    cd Code-Nexus
    ```
 
@@ -239,7 +239,7 @@ This project is licensed under the ISC License - see the package.json file for d
 ## 👨‍💻 Author
 
 **Pranshu Singh**
-- GitHub: [@Pranshu1018](https://www.github.com/Pranshu1018)
+- GitHub: [@Pranshu1018](https://github.com/Pranshu1018/CodeNexus.git)
 
 ## 🙏 Acknowledgments
 
@@ -254,7 +254,7 @@ This project is licensed under the ISC License - see the package.json file for d
 
 If you have any questions, suggestions, or need support, feel free to:
 - Open an issue on GitHub
-- Contact me at [your-email@example.com]
+- Contact me at [pranshusingh07d@gmail.com]
 - Join our community Discord server
 
 ---
