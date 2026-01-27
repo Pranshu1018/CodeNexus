@@ -1,0 +1,384 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #0cff70;
+  --secondary: #00b3ff;
+  --accent: #ff00d4;
+  --background: #0a0e17;
+  --foreground: #e0e0e0;
+}
+
+body {
+  font-family: 'Space Mono', monospace;
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  width: 0px; /* Removes the scrollbar's width */
+  background: transparent; /* Optional: keeps background transparent */
+}
+
+/* .cursor {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: all 0.1s ease;
+  z-index: 9999;
+  mix-blend-mode: difference;
+}
+
+.cursor.expand {
+  transform: translate(-50%, -50%) scale(3);
+  opacity: 0;
+  transition: all 0.3s ease;
+} */
+
+.glow-text {
+  text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary), 0 0 30px var(--primary);
+}
+
+.glow-border {
+  box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.card {
+  @apply bg-gray-800 backdrop-blur-lg rounded-lg p-6 border border-gray-700 hover:border-green-500 transition-all duration-300;
+}
+
+.btn-primary {
+  @apply px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/30;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-transparent border border-green-500 text-green-500 font-bold rounded-md transition-all duration-300 transform hover:scale-105 hover:bg-green-500/10;
+}
+
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(10, 14, 23, 0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 14, 23, 0.8) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.noise-bg {
+  position: relative;
+}
+
+.noise-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  z-index: -1;
+  pointer-events: none;
+}
+
+
+/* Light Mode Styles */
+.light-mode {
+  --primary: #00b359;
+  --secondary: #0088cc;
+  --accent: #cc0099;
+  --background: #f5f5f5;
+  --foreground: #1a1a1a;
+  --card-bg: #ffffff;
+  --card-border: #e0e0e0;
+  --input-bg: #ffffff;
+  --input-border: #d0d0d0;
+}
+
+.light-mode body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.light-mode .bg-gray-900 {
+  background-color: var(--background) !important;
+}
+
+.light-mode .bg-gray-800 {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-gray-700 {
+  background-color: #f3f4f6 !important; /* subtle panel for light */
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-gray-600 {
+  background-color: #eef2f7 !important;
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-black {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border);
+}
+
+/* Do not globally override .text-white to preserve button contrast. */
+/* Instead, when .text-white appears inside containers that become light, adjust it. */
+/* Exclude interactive elements/buttons to preserve contrast on colored backgrounds */
+.light-mode .bg-gray-800 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-black .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-700 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-600 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/95 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/90 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/85 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/80 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/70 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/60 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600),
+.light-mode .bg-gray-900\/50 .text-white:not(button):not(.btn-primary):not(.btn-secondary):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-purple-600) {
+  color: var(--foreground) !important;
+}
+
+.light-mode .text-gray-100,
+.light-mode .text-gray-200,
+.light-mode .text-gray-300 {
+  color: #4a4a4a !important;
+}
+
+.light-mode .text-gray-400,
+.light-mode .text-gray-500 {
+  color: #666666 !important;
+}
+
+.light-mode .border-gray-700,
+.light-mode .border-gray-800 {
+  border-color: var(--card-border) !important;
+}
+
+.light-mode .border-gray-600,
+.light-mode .border-gray-500 {
+  border-color: var(--card-border) !important;
+}
+
+.light-mode input,
+.light-mode textarea,
+.light-mode select {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--foreground) !important;
+}
+
+.light-mode input::placeholder,
+.light-mode textarea::placeholder {
+  color: #9aa0a6;
+}
+
+.light-mode .bg-gray-900\/80,
+.light-mode .bg-gray-900\/70 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--card-border);
+}
+.light-mode .bg-gray-900\/30 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid var(--card-border);
+}
+
+/* Chips and badges with purple tint used on mentorship page */
+.light-mode .bg-purple-900\/30 {
+  background-color: rgba(168, 85, 247, 0.12) !important; /* lighter purple tint */
+}
+.light-mode .text-purple-300 {
+  color: #6b21a8 !important; /* deeper purple for readability */
+}
+
+/* Additional common opacities used in sections */
+.light-mode .bg-gray-900\/60 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-gray-900\/50 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid var(--card-border);
+}
+
+/* Additional translucent backgrounds frequently used in overlays/navs */
+.light-mode .bg-gray-900\/95,
+.light-mode .bg-gray-900\/90,
+.light-mode .bg-gray-900\/85 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-black\/80,
+.light-mode .bg-black\/70,
+.light-mode .bg-black\/60,
+.light-mode .bg-black\/50 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(6px);
+}
+
+.light-mode .bg-black\/40 {
+  background-color: rgba(0, 0, 0, 0.08) !important; /* subtle contrast chip */
+}
+
+.light-mode .bg-black\/30 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.light-mode .shadow-lg {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Map custom component utility classes compiled with @apply */
+.light-mode .card {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+}
+
+.light-mode .feature-card {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+}
+
+.light-mode .quiz-card {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+}
+
+/* Ensure mentorship page cards are light-friendly */
+.light-mode .mentor-card,
+.light-mode .plan-card {
+  background-color: var(--card-bg) !important;
+  border-color: var(--card-border) !important;
+}
+
+/* Normalize dark gray gradients to light equivalents across pages */
+.light-mode .bg-gradient-to-b.from-gray-900.to-gray-800 {
+  background-image: linear-gradient(to bottom, #ffffff, #eef2f7) !important;
+}
+
+.light-mode .bg-gradient-to-r.from-gray-800.to-gray-900 {
+  background-image: linear-gradient(to right, #ffffff, #eef2f7) !important;
+}
+
+.light-mode .bg-gradient-to-r.from-gray-900.via-black.to-gray-900,
+.light-mode .bg-gradient-to-r.from-gray-900.via-gray-900.to-gray-900 {
+  background-image: linear-gradient(to right, #ffffff, #f5f7fa, #ffffff) !important;
+}
+
+.light-mode .bg-gradient-to-r.from-gray-700.via-gray-800.to-gray-900,
+.light-mode .bg-gradient-to-r.from-gray-700.to-gray-900 {
+  background-image: linear-gradient(to right, #ffffff, #f7f9fb, #eef2f7) !important;
+}
+
+.light-mode .bg-gradient-to-r.from-gray-800.to-gray-700,
+.light-mode .bg-gradient-to-r.from-gray-800.to-gray-700 {
+  background-image: linear-gradient(to right, #ffffff, #f4f6f8) !important;
+}
+
+.light-mode .bg-gradient-to-r.from-gray-900.via-black.to-gray-900,
+.light-mode .bg-gradient-to-br.from-gray-900.to-gray-900,
+.light-mode .bg-gradient-to-b.from-gray-900.to-gray-900 {
+  background-image: linear-gradient(to right, #ffffff, #f4f6f8) !important;
+}
+
+/* When bg color + separate bg-opacity utilities are combined */
+.light-mode .bg-gray-900.bg-opacity-95,
+.light-mode .bg-gray-900.bg-opacity-90,
+.light-mode .bg-gray-900.bg-opacity-85,
+.light-mode .bg-gray-900.bg-opacity-80,
+.light-mode .bg-gray-900.bg-opacity-70,
+.light-mode .bg-gray-900.bg-opacity-60,
+.light-mode .bg-gray-900.bg-opacity-50 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-gray-800.bg-opacity-95,
+.light-mode .bg-gray-800.bg-opacity-90,
+.light-mode .bg-gray-800.bg-opacity-85,
+.light-mode .bg-gray-800.bg-opacity-80,
+.light-mode .bg-gray-800.bg-opacity-70,
+.light-mode .bg-gray-800.bg-opacity-60,
+.light-mode .bg-gray-800.bg-opacity-50 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid var(--card-border);
+}
+
+.light-mode .bg-black.bg-opacity-95,
+.light-mode .bg-black.bg-opacity-90,
+.light-mode .bg-black.bg-opacity-85,
+.light-mode .bg-black.bg-opacity-80,
+.light-mode .bg-black.bg-opacity-70,
+.light-mode .bg-black.bg-opacity-60,
+.light-mode .bg-black.bg-opacity-50 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Hover state normalization for commonly used dark hover utilities */
+.light-mode .hover\:bg-gray-800:hover,
+.light-mode .hover\:bg-gray-900:hover {
+  background-color: #f7f7f7 !important;
+}
+
+.light-mode .hover\:bg-gray-700:hover,
+.light-mode .hover\:bg-gray-600:hover {
+  background-color: #f0f2f5 !important;
+}
+
+.light-mode .hover\:text-gray-200:hover {
+  color: var(--foreground) !important;
+}
+
+/* Code blocks or high-contrast pills often use black backgrounds */
+.light-mode .bg-black.bg-opacity-30,
+.light-mode .bg-black.bg-opacity-40 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Utility: ensure generic containers inherit proper text color */
+.light-mode .text-gray-100\/90,
+.light-mode .text-gray-100\/80,
+.light-mode .text-gray-200\/90,
+.light-mode .text-gray-200\/80 {
+  color: #333 !important;
+}
+
+@layer components {
+  .nav-link {
+    @apply relative px-4 py-2 text-gray-300 hover:text-green-400 transition-colors duration-300;
+  }
+  
+  .nav-link::after {
+    @apply content-[''] absolute left-0 bottom-0 w-0 h-[2px] bg-green-500 transition-all duration-300;
+  }
+  
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+}
+
+/* Light mode adjustments for navigational links */
+.light-mode .nav-link {
+  color: #2d2d2d !important;
+}
+.light-mode .nav-link:hover {
+  color: var(--primary) !important;
+}
