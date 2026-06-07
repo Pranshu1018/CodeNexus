@@ -4,6 +4,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Code, BookOpen, Users, Award, Zap, MessageSquare, Lightbulb, Calendar, CreditCard } from 'lucide-react';
 import { getUserInfo } from '../hooks/getUserInfo';
+import subscriptionService from '../services/subscriptionService';
+import API_BASE_URL from '../config/api';
 
 import CodeEditorButton from '../components/CodeEditorButton';
 import ExercisesButton from '../components/ExercisesButton';
@@ -179,37 +181,58 @@ const HomePage = () => {
     };
   }, [sentences.length])
 
-  useEffect(()=>{
-    fetch("http://localhost:8000/check-role", {
-      method: "GET",
-      credentials: "include",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+  useEffect(() => {
+    const checkAndShowModal = async () => {
+      try {
+        // Check if user has already seen the modal
+        if (subscriptionService.hasSeenModal()) {
+          console.log("User has already seen the modal");
+          return;
         }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("User Role:", data.role);
-        // Show modal after login/role check for user role
-        if (data.role === 'user') {
-          setTimeout(() => {
-            setIsSubscriptionModalOpen(true);
-          }, 2000);
+
+        // Get user info from localStorage
+        const authInfo = JSON.parse(localStorage.getItem('authInfo') || '{}');
+        const userEmail = authInfo.email;
+
+        // Check if user has active subscription
+        if (userEmail && subscriptionService.hasActiveSubscription(userEmail)) {
+          console.log("User has active subscription");
+          return;
         }
-      })
-      .catch((error) => {
-        console.error("Error:", error.message);
-      });
-    
-    // Show modal on every page load for user role (including refresh)
-    if (role === 'user') {
-      setTimeout(() => {
-        setIsSubscriptionModalOpen(true);
-      }, 2000);
+
+        // Fetch user role from backend
+        const response = await fetch(`${API_BASE_URL}/check-role`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("User Role:", data.role);
+          
+          // Show modal only for users (not admins/creators) after 3 seconds
+          if (data.role === 'user' && !subscriptionService.hasSeenModal()) {
+            setTimeout(() => {
+              setIsSubscriptionModalOpen(true);
+            }, 3000);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking role:", error);
+      }
+    };
+
+    // Only check if user is authenticated
+    if (isAuth) {
+      checkAndShowModal();
     }
-  },[])
+  }, [isAuth])
+
+  // Handle modal close - mark as seen
+  const handleCloseModal = () => {
+    setIsSubscriptionModalOpen(false);
+    subscriptionService.setModalSeen();
+  };
 
   return (
     role === 'user' ? (
@@ -504,7 +527,7 @@ ReactDOM.render(
       {/* Subscription Modal */}
       <SubscriptionModal 
         isOpen={isSubscriptionModalOpen}
-        onClose={() => setIsSubscriptionModalOpen(false)}
+        onClose={handleCloseModal}
         type="both"
       />
     </div>

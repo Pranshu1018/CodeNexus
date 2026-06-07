@@ -11,8 +11,6 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
     phone: '',
     subscriptionType: type === 'course' ? 'course' : 'monthly',
   });
-  const [currency, setCurrency] = useState("INR");
-  const [receiptId, setReceiptId] = useState("order_receipt_123"); // Change to your actual receipt logic
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -57,128 +55,38 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
       ...prev,
       [name]: value
     }));
+    setError(''); // Clear error on input change
   };
   
-  function loadRazorpayScript(src) {
-    return new Promise((resolve) => {
-      const existing = document.querySelector(`script[src="${src}"]`);
-      if (existing) {
-        resolve(true);
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.onload = () => {
-        resolve(true);
-      };
-      script.onerror = () => {
-        resolve(false);
-      };
-      document.body.appendChild(script);
-    });
-  }
-// Handle payment process
-  const handlePayment = async () => {
-    console.log("Initiating payment ");
-    
-    const res = await loadRazorpayScript(
-      "https://checkout.razorpay.com/v1/checkout.js"
-    );
-
-    try {
-      // Create order on your server
-      const response = await fetch("http://localhost:5001/order", {
-        method: "POST",
-        body: JSON.stringify({
-          amount: 1000 * 100, // Convert to paisa
-          currency,
-          receipt: receiptId,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const order = await response.json();
-      console.log("Order received from server:", order);
-
-      // Razorpay payment options
-      const options = {
-        key: "rzp_test_RREPD8PGJzogfo",
-        amount: 500,
-        currency,
-        name: "Acme Corp",
-        description: "Wallet Recharge",
-        image: "https://example.com/your_logo",
-        order_id: order.id,
-        handler: async function (response) {
-          try {
-            console.log("Hello")
-            const validateRes = await fetch(
-              "http://localhost:5001/order/validate",
-              {
-                method: "POST",
-                body: JSON.stringify(response),
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-            const validate = await validateRes.json();
-            if (validate.msg === "Payment Successful") {
-              //send success message to seller and initiate token transfer from seller
-              console.log("Payment verified successfully");
-              
-              // Navigate to course content page if it's a course subscription and courseId is provided
-              if (selectedPlan === 'course' && courseId) {
-                onClose();
-                navigate(`/course-content/${courseId}`);
-              } else {
-                // For monthly subscriptions or when no courseId, close modal
-                onClose();
-              }
-            
-              if (updateResponse.status === 200) {
-                console.log("Amount paid successfully");
-              } else {
-                console.log("Error updating wallet.", "error");
-              }
-            } else {
-              console.log("Payment verification failed.", "error");
-            }
-          } catch (error) {
-            console.log("An error occurred while processing payment.", "error");
-          }
-        },
-        prefill: {
-          name: "John Doe",
-          email: "wagvah",
-          contact: "999999999",
-        },
-        theme: {
-          color: "#4F46E5",
-        },
-      };
-
-      const rzp1 = new window.Razorpay(options);
-      rzp1.on("payment.failed", function (response) {
-        console.error("Payment failed:", response);
-      });
-      rzp1.open();
-    } catch (error) {
-      console.error("Error initiating payment:", error);
-      console.log("An error occurred while processing the payment.", "error");
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+    
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      setIsLoading(false);
+      return;
+    }
+    
+    // Validate phone (10 digits)
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setError('Please enter a valid 10-digit phone number');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      // Create clean subscription data without circular references
+      // Create subscription data
       const subscriptionData = {
         name: formData.name,
         email: formData.email,
@@ -191,10 +99,16 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
         courseName: courseName
       };
 
-      // Save subscription using service
+      // Save subscription
       const result = subscriptionService.saveSubscription(subscriptionData);
 
       if (result.success) {
+        // Mark modal as seen
+        subscriptionService.setModalSeen();
+        
+        // Show success message
+        alert(`Subscription successful! Plan: ${plans[selectedPlan].name}`);
+        
         // Reset form
         setFormData({
           name: '',
@@ -203,15 +117,12 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
           subscriptionType: selectedPlan
         });
 
-        // Navigate to course content page if it's a course subscription and courseId is provided
+        // Navigate based on subscription type
         if (selectedPlan === 'course' && courseId) {
           onClose();
           navigate(`/course-content/${courseId}`);
-          return;
         } else {
-          // For monthly subscriptions, show success and close modal
           onClose();
-          return;
         }
       } else {
         setError(result.error || 'Failed to save subscription');
