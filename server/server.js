@@ -25,7 +25,13 @@ const generationConfig = {
   responseMimeType: "application/json", 
 };
 
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ 
+  origin: [
+    "https://code-nexus-jade.vercel.app",
+    "http://localhost:5173"
+  ], 
+  credentials: true 
+}));
 app.use(express.json());
 app.use(cookieParser());
 
