@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../Firebase/firebase";
+import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../Firebase/firebase";
 import { useNavigate } from "react-router-dom";
 import { useAddInfo } from "../hooks/useAddInfo";
 import { getUserInfo } from "../hooks/getUserInfo";
-
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -12,7 +11,6 @@ const SignUp = () => {
     email: "",
     password: "",
     role: "user",
-
   });
 
   const { isAuth } = getUserInfo();
@@ -21,10 +19,12 @@ const SignUp = () => {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setError(""); // Clear error on input change
   };
 
   const handleLogin = async () => {
@@ -32,6 +32,9 @@ const SignUp = () => {
   }
 
   const createUser = async () => {
+    setIsLoading(true);
+    setError("");
+    
     try {
       // Create a new user with Firebase
       const result = await createUserWithEmailAndPassword(
@@ -50,7 +53,7 @@ const SignUp = () => {
 
       console.log('User created:', authInfo);
 
-      // Save to Firestore (no backend needed)
+      // Save to Firestore
       await addUser({
         name: formData.name,
         email: result.user.email,
@@ -75,22 +78,78 @@ const SignUp = () => {
         setError("Invalid email address. Please check and try again.");
       } else if (error.code === 'auth/weak-password') {
         setError("Password is too weak. Please use at least 6 characters.");
+      } else if (error.code === 'auth/network-request-failed') {
+        setError("Network error. Please check your connection.");
       } else {
         setError("Error creating account. Please try again.");
       }
       setSuccess("");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("Google signup result:", result);
+      
+      const authInfo = {
+        userId: result.user.uid,
+        name: result.user.displayName || "Google User",
+        email: result.user.email,
+        isAuth: true,
+      };
+
+      // Save to Firestore
+      await addUser({
+        name: result.user.displayName || "Google User",
+        email: result.user.email,
+        userId: result.user.uid,
+        role: "user",
+      });
+
+      localStorage.setItem("authInfo", JSON.stringify(authInfo));
+      setSuccess("Google signup successful! Redirecting to quiz...");
+      
+      setTimeout(() => {
+        navigate("/onboarding-quiz");
+      }, 1000);
+    } catch (error) {
+      console.error("Google signup error:", error);
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError("Signup cancelled. Please try again.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setError("Popup was blocked. Please enable popups for this site.");
+      } else if (error.code === 'auth/network-request-failed') {
+        setError("Network error. Please check your connection.");
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        setError("An account with this email already exists. Please login.");
+      } else {
+        setError("Google signup failed. Please try again.");
+      }
+      setSuccess("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.password 
-    ) {
+    if (!formData.name || !formData.email || !formData.password) {
       setError("Please fill in all fields.");
+      setSuccess("");
+      return;
+    }
+
+    // Validate name
+    if (formData.name.trim().length < 2) {
+      setError("Name must be at least 2 characters long.");
       setSuccess("");
       return;
     }
@@ -110,18 +169,14 @@ const SignUp = () => {
       return;
     }
 
-    setError("");
-    setSuccess("Creating your account...");
     createUser();
   };
 
-  useEffect(()=>{
-    if(isAuth)
-    {
-        navigate("/")
+  useEffect(() => {
+    if (isAuth) {
+      navigate("/");
     }
-  })
-
+  }, [isAuth, navigate]);
 
   return (
     <div className="w-full h-screen flex items-center justify-center bg-black relative overflow-hidden">
@@ -130,9 +185,21 @@ const SignUp = () => {
       
       {/* Glassmorphism container */}
       <div className="bg-white/5 p-8 rounded-lg shadow-lg w-full max-w-md relative backdrop-blur-md border border-gray-700">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">Signup / <span onClick={handleLogin} className="cursor-pointer text-green-500 hover:text-green-400">Login</span></h1>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        {success && <p className="text-green-500 text-center mb-4">{success}</p>}
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">
+          Signup / <span onClick={handleLogin} className="cursor-pointer text-green-500 hover:text-green-400 transition-colors">Login</span>
+        </h1>
+        
+        {error && (
+          <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-4 text-center">
+            {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="bg-green-900/50 border border-green-500 text-green-200 px-4 py-3 rounded-lg mb-4 text-center">
+            {success}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name Input */}
@@ -142,8 +209,10 @@ const SignUp = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-900/80 text-white border border-gray-700 rounded focus:ring-2 focus:ring-green-500 pr-10"
-              placeholder="Name"
+              disabled={isLoading}
+              className="w-full px-4 py-3 bg-gray-900/80 text-white border border-gray-700 rounded focus:ring-2 focus:ring-green-500 pr-10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              placeholder="Full Name"
+              autoComplete="name"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -168,8 +237,10 @@ const SignUp = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-900/80 text-white border border-gray-700 rounded focus:ring-2 focus:ring-green-500 pr-10"
+              disabled={isLoading}
+              className="w-full px-4 py-3 bg-gray-900/80 text-white border border-gray-700 rounded focus:ring-2 focus:ring-green-500 pr-10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               placeholder="Email"
+              autoComplete="email"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -194,8 +265,10 @@ const SignUp = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-900/80 text-white border border-gray-700 rounded focus:ring-2 focus:ring-green-500 pr-10"
-              placeholder="Password"
+              disabled={isLoading}
+              className="w-full px-4 py-3 bg-gray-900/80 text-white border border-gray-700 rounded focus:ring-2 focus:ring-green-500 pr-10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              placeholder="Password (min 6 characters)"
+              autoComplete="new-password"
             />
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -212,12 +285,39 @@ const SignUp = () => {
               />
             </svg>
           </div>
+          
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-green-800 text-white py-3 rounded hover:bg-green-700 transition"
+            disabled={isLoading}
+            className="w-full bg-green-800 text-white py-3 rounded hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            Signup
+            {isLoading ? "Creating Account..." : "Signup"}
+          </button>
+          
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-gray-900 text-gray-400">Or continue with</span>
+            </div>
+          </div>
+          
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center bg-gray-800/80 text-white py-3 rounded hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <svg
+              className="h-5 w-5 mr-2"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.28 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.397.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.934 8.934 8.907 8.907 0 0 0 8.934 8.934c4.467 0 8.529-3.249 8.529-8.934 0-.528-.081-1.097-.202-1.625z" />
+            </svg>
+            {isLoading ? "Processing..." : "Sign up with Google"}
           </button>
         </form>
       </div>
