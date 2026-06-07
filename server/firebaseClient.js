@@ -5,15 +5,17 @@ import {getFirestore} from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import {onSnapshot} from "firebase/firestore";
 import {collection, getDocs, query, where} from "firebase/firestore";
+import dotenv from "dotenv";
 
+dotenv.config();
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBwsAunM3nRNUHUzFb9yUmKzCeoqigTHOY",
-  authDomain: "megahack-a6ee9.firebaseapp.com",
-  projectId: "megahack-a6ee9",
-  storageBucket: "megahack-a6ee9.firebasestorage.app",
-  messagingSenderId: "613646385300",
-  appId: "1:613646385300:web:f0ef5ac76d0330b22c3481",
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
 };
 
 // Initialize Firebase

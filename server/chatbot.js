@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
-const genAI = new GoogleGenerativeAI("AIzaSyBCFwfsQ90lJHiQmHdXL6rFfyTGN8zCICw");
+const genAI = new GoogleGenerativeAI(process.env.GEN_AI_SECRET);
 
 // 🔹 Get predefined FAQs from Firestore
 async function getFAQResponse(userQuery) {

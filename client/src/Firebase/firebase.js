@@ -9,13 +9,13 @@ import { getDatabase, ref, get, child, update } from 'firebase/database';
 
 // UNIFIED Firebase configuration - Using codenexus-73e44 for EVERYTHING
 const firebaseConfig = {
-  apiKey: "AIzaSyDFh9bPD6qBpi7O2DuyanCbnIukgrDdz8I",
-  authDomain: "codenexus-73e44.firebaseapp.com",
-  projectId: "codenexus-73e44",
-  storageBucket: "codenexus-73e44.firebasestorage.app",
-  messagingSenderId: "967705627157",
-  appId: "1:967705627157:web:fa9e9fb9be8a8da0841c1c",
-  measurementId: "G-VPDC2NWJDR"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase app

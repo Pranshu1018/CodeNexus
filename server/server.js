@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 8000;
 
-const genAI = new GoogleGenerativeAI("AIzaSyBCFwfsQ90lJHiQmHdXL6rFfyTGN8zCICw");
+const genAI = new GoogleGenerativeAI(process.env.GEN_AI_SECRET);
 
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-flash",

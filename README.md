@@ -118,6 +118,18 @@
 - npm or yarn package manager
 - Firebase account and project setup
 
+### **Quick Deployment** 🎯
+
+Want to deploy to production? We've got you covered!
+
+📘 **[Start Here: QUICKSTART.md](./QUICKSTART.md)** - Deploy in 30 minutes!
+
+Or check out our comprehensive guides:
+- 📋 [Deployment Checklist](./DEPLOYMENT_CHECKLIST.md) - Step-by-step checklist
+- 📖 [Complete Deployment Guide](./DEPLOYMENT_GUIDE.md) - Detailed instructions
+- 🔐 [Security Setup](./SECURITY_SETUP.md) - Protect your secrets
+- 🔧 [Environment Variables Guide](./ENV_SETUP_GUIDE.md) - Configure env vars
+
 ### **Installation**
 
 1. **Clone the repository**
