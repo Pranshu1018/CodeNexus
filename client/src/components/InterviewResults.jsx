@@ -22,7 +22,7 @@ const InterviewResults = ({ sessionData, onRestart }) => {
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">Interview Complete! 🎉</h1>
+          <h1 className="text-4xl font-bold mb-4">Interview Complete! </h1>
           <p className="text-xl text-gray-300">
             {roleTitle} Mock Interview
           </p>
@@ -77,7 +77,7 @@ const InterviewResults = ({ sessionData, onRestart }) => {
                   <div className="mt-4 space-y-2">
                     {response.feedback.strengths && response.feedback.strengths.length > 0 && (
                       <div>
-                        <p className="text-green-400 font-semibold mb-1">✓ Strengths:</p>
+                        <p className="text-green-400 font-semibold mb-1"> Strengths:</p>
                         <ul className="list-disc list-inside text-gray-300 text-sm">
                           {response.feedback.strengths.map((strength, i) => (
                             <li key={i}>{strength}</li>

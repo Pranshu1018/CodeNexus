@@ -319,7 +319,7 @@ export const generateReviewSummary = (analysisResult) => {
   if (completeness.issues.length > 0) {
     summary += `Issues:\n${completeness.issues.map(i => `- ${i}`).join('\n')}\n`;
   } else {
-    summary += `✓ All required fields present\n`;
+    summary += ` All required fields present\n`;
   }
   summary += '\n';
   
@@ -333,7 +333,7 @@ export const generateReviewSummary = (analysisResult) => {
   if (quality.flags.length > 0) {
     summary += `Flags:\n${quality.flags.map(f => `- ${f}`).join('\n')}\n`;
   } else {
-    summary += `✓ No quality issues detected\n`;
+    summary += ` No quality issues detected\n`;
   }
   summary += '\n';
   

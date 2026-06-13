@@ -78,13 +78,20 @@ export const saveInterviewSession = async (sessionData) => {
 // API call to get feedback (if AI backend is available)
 export const getAnswerFeedback = async (question, answer) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/mockinterview/feedback`, {
+    const response = await axios.post(`${API_BASE_URL}/evaluate-interview`, {
       question,
-      answer
+      answer,
+      category: 'General'
     });
-    return response.data;
+    
+    if (response.data.success) {
+      return response.data.evaluation;
+    }
+    
+    // Fallback if API doesn't return expected format
+    return generateBasicFeedback(answer);
   } catch (error) {
-    console.error('Error getting feedback from backend:', error);
+    console.error('Error getting AI feedback:', error);
     // Return basic feedback if backend fails
     return generateBasicFeedback(answer);
   }

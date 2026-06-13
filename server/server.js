@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import Groq from "groq-sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getUsers } from "./firebaseClient.js";
 import chatbotRouter from "./chatbot.js";
@@ -94,8 +95,7 @@ app.post("/generate-resume", async (req, res) => {
         }
     }
 
-    // --- NEW: A cleaner, more direct prompt ---
-    // Instead of a messy string, we create a clean object of the data we want the AI to format.
+    // Create a clean object of the data we want the AI to format
     const promptData = {
         name: userData.name,
         email: userData.email,
@@ -115,33 +115,41 @@ app.post("/generate-resume", async (req, res) => {
     
     let resumeJson;
     try {
-      // --- NEW: AGGRESSIVE CLEANING & PARSING ---
-      // This is our defense against a misbehaving AI.
-      // 1. Find the start of the JSON object '{'
-      const jsonStart = textResponse.indexOf('{');
-      // 2. Find the end of the JSON object '}'
-      const jsonEnd = textResponse.lastIndexOf('}');
+      // Remove emojis and special characters that break JSON parsing
+      let cleanedResponse = textResponse.replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+                                        .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc Symbols
+                                        .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport
+                                        .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Flags
+                                        .replace(/[\u{2600}-\u{26FF}]/gu, '')   // Misc symbols
+                                        .replace(/[\u{2700}-\u{27BF}]/gu, '');  // Dingbats
+      
+      // Find the JSON object
+      const jsonStart = cleanedResponse.indexOf('{');
+      const jsonEnd = cleanedResponse.lastIndexOf('}');
       
       if (jsonStart !== -1 && jsonEnd !== -1) {
-        // 3. Extract just the JSON part.
-        const jsonString = textResponse.substring(jsonStart, jsonEnd + 1);
-        // 4. Parse the clean string.
+        const jsonString = cleanedResponse.substring(jsonStart, jsonEnd + 1);
         resumeJson = JSON.parse(jsonString);
       } else {
-        // If we can't even find a JSON object, throw an error.
         throw new Error("No valid JSON object found in AI response.");
       }
     } catch (parseError) {
-      // If parsing fails even after cleaning, log the bad response and send an error.
-      console.error("Failed to parse cleaned JSON. Raw AI response:", textResponse);
-      throw new Error("AI returned malformed data.");
+      console.error("Failed to parse JSON. Raw AI response:", textResponse);
+      console.error("Parse error:", parseError.message);
+      return res.status(500).json({ 
+        error: "Failed to parse resume data. Please try again.",
+        details: parseError.message 
+      });
     }
 
     res.json(resumeJson);
 
   } catch (error) {
-    console.error("DETAILED ERROR in /generate-resume:", error.message);
-    res.status(500).json({ error: "Failed to generate or parse resume JSON." });
+    console.error("Error in /generate-resume:", error.message);
+    res.status(500).json({ 
+      error: "Failed to generate resume. Please try again.",
+      details: error.message 
+    });
   }
 });
 
@@ -240,6 +248,101 @@ app.get("/health", (req, res) => {
       groq: !!process.env.GROQ_API_KEY
     }
   });
+});
+
+// ============================================
+// MOCK INTERVIEW EVALUATION (Groq AI)
+// ============================================
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+app.post("/evaluate-interview", async (req, res) => {
+  try {
+    const { question, answer, category } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({ error: "Question and answer are required" });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({ error: "AI evaluation service not configured" });
+    }
+
+    const prompt = `You are an expert technical interviewer. Evaluate the following interview answer and provide structured feedback in JSON format WITHOUT using any emojis.
+
+Question: ${question}
+Category: ${category || 'General'}
+Answer: ${answer}
+
+Provide your evaluation in this exact JSON format (NO EMOJIS):
+{
+  "score": <number 0-10>,
+  "strengths": ["strength 1", "strength 2"],
+  "improvements": ["improvement 1", "improvement 2"],
+  "detailedFeedback": "A brief paragraph of detailed feedback",
+  "keyPoints": ["key point 1", "key point 2"]
+}
+
+IMPORTANT: Do not use any emojis or special unicode characters in your response.
+
+Focus on:
+- Clarity and structure of the answer
+- Technical accuracy (if applicable)
+- Completeness of the response
+- Communication skills
+- Specific examples provided
+
+Return ONLY the JSON object, no additional text or emojis.`;
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.3,
+      max_tokens: 1024,
+    });
+
+    const aiResponse = chatCompletion.choices[0]?.message?.content || '{}';
+    
+    // Remove any emojis that might have slipped through
+    const cleanedResponse = aiResponse.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA70}-\u{1FAFF}]/gu, '');
+    
+    // Parse the JSON response
+    let evaluation;
+    try {
+      const jsonStart = cleanedResponse.indexOf('{');
+      const jsonEnd = cleanedResponse.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        const jsonString = cleanedResponse.substring(jsonStart, jsonEnd + 1);
+        evaluation = JSON.parse(jsonString);
+      } else {
+        throw new Error("No JSON found in response");
+      }
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", cleanedResponse);
+      // Return a basic evaluation if parsing fails
+      evaluation = {
+        score: 5,
+        strengths: ["Answer provided"],
+        improvements: ["Could provide more detail"],
+        detailedFeedback: "Unable to evaluate fully. Please try again.",
+        keyPoints: ["Answer recorded"]
+      };
+    }
+
+    res.json({
+      success: true,
+      evaluation
+    });
+
+  } catch (error) {
+    console.error("Error in interview evaluation:", error);
+    res.status(500).json({ 
+      error: "Failed to evaluate answer",
+      details: error.message 
+    });
+  }
 });
 
 app.listen(port, () => {

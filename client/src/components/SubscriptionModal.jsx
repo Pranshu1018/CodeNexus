@@ -188,7 +188,7 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
                 subscriptionService.setModalSeen();
                 
                 // Show success message
-                alert(`🎉 Payment Successful!\n\nPlan: ${subscriptionData.planName}\nAmount: ₹${subscriptionData.planPrice}\nPayment ID: ${response.razorpay_payment_id}`);
+                alert(` Payment Successful!\n\nPlan: ${subscriptionData.planName}\nAmount: ₹${subscriptionData.planPrice}\nPayment ID: ${response.razorpay_payment_id}`);
                 
                 // Reset form
                 setFormData({

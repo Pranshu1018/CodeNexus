@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import img1 from '../assets/Progress/img1.jpg';
 import img2 from '../assets/Progress/img2.jpg';
 import img4 from '../assets/Progress/img4.jpg';
+import API_BASE_URL from '../config/api';
 import {
   BarChart,
   PieChart,
@@ -118,16 +119,22 @@ const ProgressTracker = () => {
           max_rating: 2000,
         };
 
-        const response = await fetch("http://127.0.0.1:8000/predict", {
+        const response = await fetch(`${API_BASE_URL}/predict`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sampleData),
         });
 
+        if (!response.ok) {
+          console.log('Prediction endpoint not available');
+          return;
+        }
+
         const result = await response.json();
         setPredictionData(result);
       } catch (error) {
         console.error("Error fetching prediction:", error);
+        // Prediction is optional, don't break the page
       }
     };
 

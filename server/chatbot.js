@@ -148,6 +148,8 @@ ${contextData}
 - Help students navigate the platform
 - When asked about courses, provide specific course titles, descriptions, and instructors from the list above
 - When asked about mentors, provide specific mentor names, expertise, and availability from the list above
+- DO NOT use emojis in your responses - use clear, professional language instead
+- Be friendly and encouraging but professional
 - Provide guidance on learning paths and career development
 - Assist with technical questions related to programming and development
 - Be friendly, encouraging, and supportive
@@ -233,7 +235,11 @@ router.post("/chat", async (req, res) => {
         }));
 
         const aiResponse = await getGroqResponse(message, conversationHistory, systemContext);
-        res.json({ response: aiResponse });
+        
+        // Remove emojis from AI response
+        const cleanResponse = aiResponse.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA70}-\u{1FAFF}]/gu, '');
+        
+        res.json({ response: cleanResponse });
 
     } catch (error) {
         console.error("Error in /chat route:", error);
