@@ -25,12 +25,17 @@ const MentorConnect = () => {
   
   const { userId, isAuth } = getUserInfo();
   const navigate = useNavigate();
+  const [currentUserName, setCurrentUserName] = useState('');
 
   useEffect(() => {
     if (!isAuth) {
       navigate('/login');
       return;
     }
+    
+    // Get current user's display name
+    const authInfo = JSON.parse(localStorage.getItem('authInfo') || '{}');
+    setCurrentUserName(authInfo.displayName || authInfo.name || authInfo.email?.split('@')[0] || 'Student');
     
     fetchMentors();
   }, [isAuth, navigate]);
@@ -94,16 +99,34 @@ const MentorConnect = () => {
     }
   };
 
-  const handleChat = (mentorId) => {
-    navigate(`/mentor-chat/${mentorId}`);
+  const handleChat = (mentorId, mentorName) => {
+    // Pass both user and mentor names for bidirectional chat
+    navigate(`/mentor-chat/${mentorId}`, { 
+      state: { 
+        userName: currentUserName,
+        mentorName: mentorName 
+      }
+    });
   };
 
-  const handleVoiceCall = (mentorId) => {
-    navigate(`/mentor-call/${mentorId}?type=voice`);
+  const handleVoiceCall = (mentorId, mentorName) => {
+    // Pass both user and mentor names for bidirectional calls
+    navigate(`/mentor-call/${mentorId}?type=voice`, { 
+      state: { 
+        userName: currentUserName,
+        mentorName: mentorName 
+      }
+    });
   };
 
-  const handleVideoCall = (mentorId) => {
-    navigate(`/mentor-call/${mentorId}?type=video`);
+  const handleVideoCall = (mentorId, mentorName) => {
+    // Pass both user and mentor names for bidirectional calls
+    navigate(`/mentor-call/${mentorId}?type=video`, { 
+      state: { 
+        userName: currentUserName,
+        mentorName: mentorName 
+      }
+    });
   };
 
   // Get unique expertise areas
@@ -255,7 +278,7 @@ const MentorConnect = () => {
                     {/* Action Buttons */}
                     <div className="grid grid-cols-3 gap-2">
                       <button
-                        onClick={() => handleChat(mentor.id)}
+                        onClick={() => handleChat(mentor.id, mentor.name)}
                         disabled={mentor.status === 'offline'}
                         className="flex flex-col items-center gap-1 p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
                       >
@@ -263,7 +286,7 @@ const MentorConnect = () => {
                         <span className="text-xs">Chat</span>
                       </button>
                       <button
-                        onClick={() => handleVoiceCall(mentor.id)}
+                        onClick={() => handleVoiceCall(mentor.id, mentor.name)}
                         disabled={mentor.status !== 'available'}
                         className="flex flex-col items-center gap-1 p-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
                       >
@@ -271,7 +294,7 @@ const MentorConnect = () => {
                         <span className="text-xs">Call</span>
                       </button>
                       <button
-                        onClick={() => handleVideoCall(mentor.id)}
+                        onClick={() => handleVideoCall(mentor.id, mentor.name)}
                         disabled={mentor.status !== 'available'}
                         className="flex flex-col items-center gap-1 p-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition-colors"
                       >

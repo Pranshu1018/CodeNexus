@@ -4,6 +4,7 @@ import { jsPDF } from "jspdf";
 import Select from 'react-select';
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import API_BASE_URL from '../config/api';
 
 const skillsOptions = [
   { value: 'web-development', label: 'Web Development' },
@@ -85,7 +86,7 @@ const ResumeBuilder = () => {
         skills: formData.skills.map(skill => skill.label),
         languages: formData.languages.map(lang => lang.label),
       };
-      const response = await fetch("http://localhost:8000/generate-resume", {
+      const response = await fetch(`${API_BASE_URL}/generate-resume`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend),
       });
@@ -113,7 +114,7 @@ const ResumeBuilder = () => {
   };
 
   const navigateToCourses = () => {
-    window.location.href = 'http://localhost:5173/Courses';
+    window.location.href = '/Courses';
   };
 
   // === FULLY IMPLEMENTED MODERN TEMPLATE ===

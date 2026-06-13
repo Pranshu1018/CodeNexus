@@ -184,9 +184,18 @@ const HomePage = () => {
   useEffect(() => {
     const checkAndShowModal = async () => {
       try {
-        // Check if user has already seen the modal
-        if (subscriptionService.hasSeenModal()) {
-          console.log("User has already seen the modal");
+        console.log("Checking subscription modal conditions...");
+        
+        // Only show if user is authenticated
+        if (!isAuth) {
+          console.log("User not authenticated - skipping modal");
+          return;
+        }
+
+        // Check if user has already seen the modal THIS SESSION
+        const modalShownThisSession = sessionStorage.getItem('subscriptionModalShown');
+        if (modalShownThisSession) {
+          console.log("Modal already shown this session");
           return;
         }
 
@@ -200,38 +209,29 @@ const HomePage = () => {
           return;
         }
 
-        // Fetch user role from backend
-        const response = await fetch(`${API_BASE_URL}/check-role`, {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("User Role:", data.role);
-          
-          // Show modal only for users (not admins/creators) after 3 seconds
-          if (data.role === 'user' && !subscriptionService.hasSeenModal()) {
-            setTimeout(() => {
-              setIsSubscriptionModalOpen(true);
-            }, 3000);
-          }
-        }
+        // Show modal for authenticated users after 2 seconds
+        console.log("Showing subscription modal in 2 seconds...");
+        setTimeout(() => {
+          console.log("Opening subscription modal now");
+          setIsSubscriptionModalOpen(true);
+          // Mark as shown for this session
+          sessionStorage.setItem('subscriptionModalShown', 'true');
+        }, 2000);
       } catch (error) {
-        console.error("Error checking role:", error);
+        console.error("Error checking subscription:", error);
       }
     };
 
-    // Only check if user is authenticated
+    // Check when user is authenticated
     if (isAuth) {
       checkAndShowModal();
     }
   }, [isAuth])
 
-  // Handle modal close - mark as seen
+  // Handle modal close - don't mark as permanently seen, just for this session
   const handleCloseModal = () => {
     setIsSubscriptionModalOpen(false);
-    subscriptionService.setModalSeen();
+    // Already marked in sessionStorage, so it won't show again this session
   };
 
   return (

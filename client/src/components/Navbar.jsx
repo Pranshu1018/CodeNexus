@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { auth } from '../Firebase/firebase';
 import { signOut } from 'firebase/auth';
+import { getSavedUserRoles } from '../services/authHelpers';
 
 
 const Navbar = () => {
@@ -19,9 +20,38 @@ const Navbar = () => {
   const {isAuth}=getUserInfo()
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
+  const [userRoles, setUserRoles] = useState({ isMentor: false, isAdmin: false, isInstructor: false });
 
   const {role, setRole} = useContext(RoleContext);
   const { theme, toggleTheme } = useTheme();
+  
+  // Load user roles on mount
+  useEffect(() => {
+    const loadUserRoles = async () => {
+      if (isAuth) {
+        // First check localStorage for quick load
+        const savedRoles = getSavedUserRoles();
+        if (savedRoles) {
+          setUserRoles(savedRoles);
+        }
+        
+        // Then fetch fresh roles from Firebase
+        const { userId } = getUserInfo();
+        if (userId) {
+          try {
+            const { getUserRoles, saveUserRoles } = await import('../services/authHelpers');
+            const freshRoles = await getUserRoles(userId);
+            setUserRoles(freshRoles);
+            saveUserRoles(freshRoles); // Save to localStorage
+          } catch (error) {
+            console.error('Error loading user roles:', error);
+          }
+        }
+      }
+    };
+    
+    loadUserRoles();
+  }, [isAuth]);
   
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -134,6 +164,12 @@ const Navbar = () => {
                   <Link to="/progress" className="block px-4 py-2 text-gray-200 hover:bg-gray-700">
                     Dashboard
                   </Link>
+                  {userRoles.isMentor && (
+                    <Link to="/mentor-dashboard" className="block px-4 py-2 text-gray-200 hover:bg-gray-700 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Mentor Dashboard
+                    </Link>
+                  )}
                   <Link to="/creator-dashboard" className="block px-4 py-2 text-gray-200 hover:bg-gray-700">
                     Creator Dashboard
                   </Link>
@@ -195,6 +231,15 @@ const Navbar = () => {
                 >
                   Dashboard
                 </Link>
+                {userRoles.isMentor && (
+                  <Link
+                    to="/mentor-dashboard"
+                    className="mobile-nav-link flex items-center gap-2 py-2 px-4 rounded-md text-gray-300 hover:bg-gray-800 hover:text-green-400 transition-colors duration-200"
+                  >
+                    <Users className="h-4 w-4" />
+                    Mentor Dashboard
+                  </Link>
+                )}
                 <Link
                   to="/creator-dashboard"
                   className="mobile-nav-link block py-2 px-4 rounded-md text-gray-300 hover:bg-gray-800 hover:text-green-400 transition-colors duration-200"

@@ -10,7 +10,8 @@ import {
   where, 
   orderBy,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../Firebase/firebase';
 
@@ -26,18 +27,20 @@ export const MENTOR_STATUS = {
  */
 export const createMentor = async (mentorData) => {
   try {
-    const mentorRef = await addDoc(collection(db, 'mentors'), {
+    // Use setDoc with userId as document ID for easy lookup
+    const mentorRef = doc(db, 'mentors', mentorData.userId);
+    await setDoc(mentorRef, {
       ...mentorData,
       status: MENTOR_STATUS.OFFLINE,
       rating: 0,
       totalRatings: 0,
       totalSessions: 0,
-      verified: false, // Admin needs to verify
+      verified: mentorData.verified !== undefined ? mentorData.verified : false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
     
-    return { id: mentorRef.id, ...mentorData };
+    return { id: mentorData.userId, ...mentorData };
   } catch (error) {
     console.error('Error creating mentor:', error);
     throw error;

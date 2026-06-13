@@ -2,6 +2,7 @@ import React from 'react'
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 
 export function Test() {
 
@@ -11,7 +12,7 @@ export function Test() {
   useEffect(() => {
     const checkUserRole = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/check-role", {
+        const res = await axios.get(`${API_BASE_URL}/check-role`, {
           withCredentials: true, // Sends cookies with request
         });
   

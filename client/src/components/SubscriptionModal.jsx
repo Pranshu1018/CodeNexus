@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { X, Check, CreditCard, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import subscriptionService from '../services/subscriptionService';
+import API_BASE_URL from '../config/api';
+
+// Razorpay configuration
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', coursePrice = 0, courseId = null }) => {
   const navigate = useNavigate();
@@ -13,6 +17,7 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const [selectedPlan, setSelectedPlan] = useState(type === 'course' ? 'course' : 'monthly');
 
@@ -57,6 +62,206 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
     }));
     setError(''); // Clear error on input change
   };
+
+  // Load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      // Check if already loaded
+      if (window.Razorpay) {
+        console.log("Razorpay script already loaded");
+        resolve(true);
+        return;
+      }
+
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existingScript) {
+        existingScript.onload = () => resolve(true);
+        existingScript.onerror = () => resolve(false);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        console.log("Razorpay script loaded successfully");
+        resolve(true);
+      };
+      script.onerror = () => {
+        console.error("Failed to load Razorpay script");
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  // Process payment with Razorpay
+  const processPayment = async (subscriptionData) => {
+    try {
+      console.log("Starting payment process with data:", subscriptionData);
+      setIsProcessingPayment(true);
+      
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load Razorpay. Please check your internet connection.');
+      }
+
+      // Verify Razorpay is available
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK not loaded. Please refresh the page and try again.');
+      }
+
+      console.log("Creating order with amount:", subscriptionData.planPrice);
+
+      // Create order on backend using environment variable
+      const orderResponse = await fetch(`${API_BASE_URL}/order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: subscriptionData.planPrice,
+          currency: 'INR',
+          receipt: `receipt_${Date.now()}`,
+        }),
+      });
+
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text();
+        console.error("Order creation failed:", errorText);
+        throw new Error('Failed to create payment order. Please ensure the backend server is running.');
+      }
+
+      const order = await orderResponse.json();
+      console.log('Order created successfully:', order);
+
+      if (!order.id) {
+        throw new Error('Invalid order response from server');
+      }
+
+      // Razorpay checkout options
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: subscriptionData.planPrice * 100, // Convert to paise
+        currency: 'INR',
+        name: 'CodeNexus',
+        description: subscriptionData.planName,
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            console.log('Payment successful, validating...', response);
+            
+            // Validate payment on backend using environment variable
+            const validateResponse = await fetch(`${API_BASE_URL}/order/validate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const validateData = await validateResponse.json();
+            console.log('Validation response:', validateData);
+
+            if (validateData.valid) {
+              // Payment verified successfully
+              console.log('Payment verified successfully!');
+
+              // Save subscription with payment details
+              const fullSubscriptionData = {
+                ...subscriptionData,
+                paymentId: response.razorpay_payment_id,
+                orderId: response.razorpay_order_id,
+                paymentStatus: 'completed',
+                paymentDate: new Date().toISOString(),
+              };
+
+              const result = subscriptionService.saveSubscription(fullSubscriptionData);
+
+              if (result.success) {
+                // Mark modal as seen
+                subscriptionService.setModalSeen();
+                
+                // Show success message
+                alert(`🎉 Payment Successful!\n\nPlan: ${subscriptionData.planName}\nAmount: ₹${subscriptionData.planPrice}\nPayment ID: ${response.razorpay_payment_id}`);
+                
+                // Reset form
+                setFormData({
+                  name: '',
+                  email: '',
+                  phone: '',
+                  subscriptionType: selectedPlan
+                });
+
+                // Navigate based on subscription type
+                if (selectedPlan === 'course' && courseId) {
+                  onClose();
+                  navigate(`/course-content/${courseId}`);
+                } else {
+                  onClose();
+                  navigate('/courses');
+                }
+              } else {
+                throw new Error('Failed to save subscription data');
+              }
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            alert('Payment verification failed. Please contact support with your payment ID: ' + response.razorpay_payment_id);
+          } finally {
+            setIsProcessingPayment(false);
+            setIsLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        notes: {
+          subscriptionType: subscriptionData.subscriptionType,
+          courseName: subscriptionData.courseName || 'N/A',
+        },
+        theme: {
+          color: '#10b981', // Green theme matching your site
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessingPayment(false);
+            setIsLoading(false);
+            console.log('Payment cancelled by user');
+          }
+        }
+      };
+
+      console.log("Opening Razorpay checkout with options:", options);
+
+      // Open Razorpay checkout
+      const razorpay = new window.Razorpay(options);
+      
+      razorpay.on('payment.failed', function (response) {
+        console.error('Payment failed:', response.error);
+        setIsProcessingPayment(false);
+        setIsLoading(false);
+        alert(`Payment Failed!\n\nReason: ${response.error.description}\nPlease try again.`);
+      });
+
+      razorpay.open();
+
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      setIsProcessingPayment(false);
+      setIsLoading(false);
+      setError(error.message || 'Payment processing failed. Please try again.');
+    }
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,38 +304,12 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
         courseName: courseName
       };
 
-      // Save subscription
-      const result = subscriptionService.saveSubscription(subscriptionData);
+      // Process payment through Razorpay
+      await processPayment(subscriptionData);
 
-      if (result.success) {
-        // Mark modal as seen
-        subscriptionService.setModalSeen();
-        
-        // Show success message
-        alert(`Subscription successful! Plan: ${plans[selectedPlan].name}`);
-        
-        // Reset form
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          subscriptionType: selectedPlan
-        });
-
-        // Navigate based on subscription type
-        if (selectedPlan === 'course' && courseId) {
-          onClose();
-          navigate(`/course-content/${courseId}`);
-        } else {
-          onClose();
-        }
-      } else {
-        setError(result.error || 'Failed to save subscription');
-      }
     } catch (error) {
       console.error('Error in handleSubmit:', error);
       setError('An error occurred while processing your subscription');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -328,19 +507,39 @@ const SubscriptionModal = ({ isOpen, onClose, type = 'both', courseName = '', co
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isProcessingPayment}
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {isLoading ? 'Processing...' : `Subscribe Now - ₹${plans[selectedPlan].price}`}
+                {isProcessingPayment ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing Payment...
+                  </span>
+                ) : isLoading ? (
+                  'Validating...'
+                ) : (
+                  `Pay ₹${plans[selectedPlan].price} - Subscribe Now`
+                )}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                disabled={isLoading}
+                disabled={isLoading || isProcessingPayment}
                 className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
+            </div>
+            
+            {/* Payment security badge */}
+            <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-center text-sm text-gray-400">
+              <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Secured by Razorpay - India's Most Trusted Payment Gateway
             </div>
           </form>
         </div>

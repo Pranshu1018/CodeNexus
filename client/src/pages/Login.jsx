@@ -6,6 +6,7 @@ import { useAddInfo } from "../hooks/useAddInfo";
 import { getUserInfo } from "../hooks/getUserInfo";
 import API_BASE_URL from "../config/api";
 import axios from "axios";
+import { getUserRoles, saveUserRoles } from "../services/authHelpers";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -31,22 +32,44 @@ const Login = () => {
     
     try {
       const result = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const userId = result.user.uid;
       const authInfo = { 
-        userId: result.user.uid, 
-        email: result.user.email, 
+        userId: userId, 
+        email: result.user.email,
+        displayName: result.user.displayName || result.user.email.split('@')[0],
         isAuth: true 
       };
       
       localStorage.setItem("authInfo", JSON.stringify(authInfo));
+      
+      // Check user roles (mentor, admin, etc.)
+      const roles = await getUserRoles(userId);
+      saveUserRoles(roles);
+      console.log('User roles:', roles);
+      
       setSuccess("Login successful! Redirecting...");
       
-      // Call backend login endpoint
-      await axios.post(`${API_BASE_URL}/login`, 
-        { email: result.user.email }, 
-        { withCredentials: true }
-      );
+      // Call backend login endpoint (optional - don't fail if backend is down)
+      try {
+        await axios.post(`${API_BASE_URL}/login`, 
+          { email: result.user.email }, 
+          { withCredentials: true }
+        );
+      } catch (backendError) {
+        console.log('Backend login endpoint not available:', backendError.message);
+        // Continue anyway - Firebase auth is what matters
+      }
       
-      setTimeout(() => navigate("/"), 500);
+      // Redirect based on role
+      if (roles.isMentor) {
+        setTimeout(() => navigate("/mentor-dashboard"), 500);
+      } else if (roles.isAdmin) {
+        setTimeout(() => navigate("/admin-dashboard"), 500);
+      } else if (roles.isInstructor) {
+        setTimeout(() => navigate("/creator-dashboard"), 500);
+      } else {
+        setTimeout(() => navigate("/"), 500);
+      }
     } catch (error) {
       console.error("Login error:", error);
       
@@ -73,11 +96,12 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google login result:", result);
+      const userId = result.user.uid;
       
       const authInfo = { 
-        userId: result.user.uid, 
+        userId: userId, 
         email: result.user.email, 
-        name: result.user.displayName,
+        displayName: result.user.displayName || result.user.email.split('@')[0],
         isAuth: true 
       };
       
@@ -95,14 +119,34 @@ const Login = () => {
         console.log("User might already exist:", dbError);
       }
       
-      // Call backend login endpoint
-      await axios.post(`${API_BASE_URL}/login`, 
-        { email: result.user.email }, 
-        { withCredentials: true }
-      );
+      // Check user roles (mentor, admin, etc.)
+      const roles = await getUserRoles(userId);
+      saveUserRoles(roles);
+      console.log('User roles:', roles);
+      
+      // Call backend login endpoint (optional - don't fail if backend is down)
+      try {
+        await axios.post(`${API_BASE_URL}/login`, 
+          { email: result.user.email }, 
+          { withCredentials: true }
+        );
+      } catch (backendError) {
+        console.log('Backend login endpoint not available:', backendError.message);
+        // Continue anyway - Firebase auth is what matters
+      }
       
       setSuccess("Google login successful! Redirecting...");
-      setTimeout(() => navigate("/"), 500);
+      
+      // Redirect based on role
+      if (roles.isMentor) {
+        setTimeout(() => navigate("/mentor-dashboard"), 500);
+      } else if (roles.isAdmin) {
+        setTimeout(() => navigate("/admin-dashboard"), 500);
+      } else if (roles.isInstructor) {
+        setTimeout(() => navigate("/creator-dashboard"), 500);
+      } else {
+        setTimeout(() => navigate("/"), 500);
+      }
     } catch (error) {
       console.error("Google login error:", error);
       

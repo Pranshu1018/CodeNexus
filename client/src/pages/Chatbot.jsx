@@ -34,37 +34,36 @@ function Chatbot() {
     setInput("")
     try {
       setIsTyping(true)
-      const response = await fetch("http://localhost:8000/chat", {
+      
+      // Send conversation history for better context
+      const conversationHistory = messages.slice(-10) // Last 10 messages for context
+      
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiUrl}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userQuery }),
+        body: JSON.stringify({ 
+          message: userQuery,
+          history: conversationHistory
+        }),
       })
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`)
+      }
 
       const data = await response.json()
 
-      // Extract meaningful response
-      if (typeof data === "string") return data
-
-      if (typeof data === "object" && data !== null) {
-        const firstKey = Object.keys(data)[0] // Get first key in the response
-        const value = data[firstKey]
-
-        if (Array.isArray(value)) {
-          return value
-            .map((item) => {
-              if (typeof item === "string") return item // Simple strings
-              if (typeof item === "object") return Object.values(item).join(" - ") // Objects
-              return item
-            })
-            .join("\n\n") // Proper spacing
-        }
-        return value
+      // Handle response
+      if (data.error) {
+        return `Error: ${data.error}`
       }
 
-      return "I'm not sure, please try rephrasing!"
+      return data.response || "I'm not sure, please try rephrasing!"
+      
     } catch (error) {
       console.error("Error:", error)
-      return "Sorry, I couldn't process that request."
+      return "Sorry, I couldn't connect to the AI assistant. Please try again later."
     } finally {
       setIsTyping(false)
     }
@@ -121,7 +120,7 @@ function Chatbot() {
           <div className="chatbot-header">
             <div className="chatbot-title">
               <MessageSquare className="chatbot-icon" size={20} />
-              <span>Chat Assistant</span>
+              <span>CodeNexus AI Assistant</span>
             </div>
             <button onClick={toggleChat} className="chatbot-close-button" aria-label="Close chat">
               <X size={20} />
@@ -130,13 +129,20 @@ function Chatbot() {
           <div ref={chatBodyRef} className="chatbot-body">
             {messages.length === 0 ? (
               <div className="chatbot-welcome">
-                <h3>Welcome to our Chat Assistant</h3>
-                <p>How can I help you today? You can ask me about:</p>
+                <h3>Welcome to CodeNexus Assistant! 👋</h3>
+                <p>I'm your personal learning companion. I can help you with:</p>
                 <ul>
-                  <li>Full-stack courses</li>
-                  <li>Hackathons</li>
-                  <li>Development resources</li>
+                  <li>📚 Course recommendations and learning paths</li>
+                  <li>💻 Programming questions and technical guidance</li>
+                  <li>🎯 Mock interview preparation tips</li>
+                  <li>👨‍🏫 Finding the right mentor for your goals</li>
+                  <li>🏆 Information about hackathons and events</li>
+                  <li>📊 Tracking your progress and achievements</li>
+                  <li>🗺️ Career roadmaps and development paths</li>
                 </ul>
+                <p style={{ marginTop: '16px', color: '#10b981', fontWeight: '500' }}>
+                  Ask me anything about CodeNexus or your learning journey!
+                </p>
               </div>
             ) : (
               <div className="chatbot-messages">
@@ -180,10 +186,10 @@ function Chatbot() {
       ) : (
         <button onClick={toggleChat} className="chatbot-toggle-button" aria-label="Open chat">
           <MessageSquare size={20} />
-          <span>Chat with us</span>
+          <span>Ask CodeNexus AI</span>
         </button>
       )}
-      <style jsx>{`
+      <style>{`
         .chatbot-container {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           position: fixed;

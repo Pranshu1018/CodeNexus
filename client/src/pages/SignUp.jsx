@@ -4,13 +4,15 @@ import { auth, googleProvider } from "../Firebase/firebase";
 import { useNavigate } from "react-router-dom";
 import { useAddInfo } from "../hooks/useAddInfo";
 import { getUserInfo } from "../hooks/getUserInfo";
+import { createMentor } from "../services/mentorService";
+import { Users, GraduationCap, BookOpen } from "lucide-react";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    role: "user",
+    role: "student", // student, mentor, or instructor
   });
 
   const { isAuth } = getUserInfo();
@@ -48,6 +50,7 @@ const SignUp = () => {
         userId: result.user.uid,
         name: formData.name,
         email: result.user.email,
+        displayName: formData.name,
         isAuth: true,
       };
 
@@ -58,16 +61,34 @@ const SignUp = () => {
         name: formData.name,
         email: result.user.email,
         userId: result.user.uid,
-        role: "user",
+        role: formData.role,
       });
 
-      localStorage.setItem("authInfo", JSON.stringify(authInfo));
-      setSuccess("Signup successful! Redirecting to quiz...");
-      
-      // Redirect new users to onboarding quiz
-      setTimeout(() => {
-        navigate("/onboarding-quiz");
-      }, 1000);
+      // If signing up as mentor, create mentor profile automatically
+      if (formData.role === 'mentor') {
+        await createMentor({
+          userId: result.user.uid,
+          name: formData.name,
+          email: result.user.email,
+          bio: `${formData.name} is a mentor on CodeNexus`,
+          expertise: ['Programming', 'Software Development'],
+          experience: 0,
+          hourlyRate: 0,
+          availability: [],
+          verified: true, // Auto-verified for instant access
+        });
+        setSuccess("Mentor account created! Redirecting to dashboard...");
+        localStorage.setItem("authInfo", JSON.stringify(authInfo));
+        setTimeout(() => navigate("/mentor-dashboard"), 1000);
+      } else if (formData.role === 'instructor') {
+        setSuccess("Instructor account created! Redirecting to creator dashboard...");
+        localStorage.setItem("authInfo", JSON.stringify(authInfo));
+        setTimeout(() => navigate("/creator-dashboard"), 1000);
+      } else {
+        setSuccess("Signup successful! Redirecting to quiz...");
+        localStorage.setItem("authInfo", JSON.stringify(authInfo));
+        setTimeout(() => navigate("/onboarding-quiz"), 1000);
+      }
     } catch (error) {
       console.error('Signup error:', error);
       
@@ -101,6 +122,7 @@ const SignUp = () => {
         userId: result.user.uid,
         name: result.user.displayName || "Google User",
         email: result.user.email,
+        displayName: result.user.displayName || "Google User",
         isAuth: true,
       };
 
@@ -109,15 +131,34 @@ const SignUp = () => {
         name: result.user.displayName || "Google User",
         email: result.user.email,
         userId: result.user.uid,
-        role: "user",
+        role: formData.role,
       });
 
-      localStorage.setItem("authInfo", JSON.stringify(authInfo));
-      setSuccess("Google signup successful! Redirecting to quiz...");
-      
-      setTimeout(() => {
-        navigate("/onboarding-quiz");
-      }, 1000);
+      // If signing up as mentor, create mentor profile
+      if (formData.role === 'mentor') {
+        await createMentor({
+          userId: result.user.uid,
+          name: result.user.displayName || "Google User",
+          email: result.user.email,
+          bio: `${result.user.displayName || "Google User"} is a mentor on CodeNexus`,
+          expertise: ['Programming', 'Software Development'],
+          experience: 0,
+          hourlyRate: 0,
+          availability: [],
+          verified: true,
+        });
+        setSuccess("Mentor account created! Redirecting to dashboard...");
+        localStorage.setItem("authInfo", JSON.stringify(authInfo));
+        setTimeout(() => navigate("/mentor-dashboard"), 1000);
+      } else if (formData.role === 'instructor') {
+        setSuccess("Instructor account created! Redirecting to creator dashboard...");
+        localStorage.setItem("authInfo", JSON.stringify(authInfo));
+        setTimeout(() => navigate("/creator-dashboard"), 1000);
+      } else {
+        setSuccess("Google signup successful! Redirecting to quiz...");
+        localStorage.setItem("authInfo", JSON.stringify(authInfo));
+        setTimeout(() => navigate("/onboarding-quiz"), 1000);
+      }
     } catch (error) {
       console.error("Google signup error:", error);
       
@@ -284,6 +325,58 @@ const SignUp = () => {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
+          </div>
+
+          {/* Role Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              I want to join as:
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'student' })}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  formData.role === 'student'
+                    ? 'border-green-500 bg-green-900/30 text-green-300'
+                    : 'border-gray-700 bg-gray-900/50 text-gray-400 hover:border-gray-600'
+                }`}
+              >
+                <GraduationCap className="w-6 h-6 mx-auto mb-1" />
+                <div className="text-xs font-medium">Student</div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'mentor' })}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  formData.role === 'mentor'
+                    ? 'border-purple-500 bg-purple-900/30 text-purple-300'
+                    : 'border-gray-700 bg-gray-900/50 text-gray-400 hover:border-gray-600'
+                }`}
+              >
+                <Users className="w-6 h-6 mx-auto mb-1" />
+                <div className="text-xs font-medium">Mentor</div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'instructor' })}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  formData.role === 'instructor'
+                    ? 'border-blue-500 bg-blue-900/30 text-blue-300'
+                    : 'border-gray-700 bg-gray-900/50 text-gray-400 hover:border-gray-600'
+                }`}
+              >
+                <BookOpen className="w-6 h-6 mx-auto mb-1" />
+                <div className="text-xs font-medium">Instructor</div>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {formData.role === 'student' && '• Learn from courses, mentors, and challenges'}
+              {formData.role === 'mentor' && '• Guide students through 1-on-1 mentorship'}
+              {formData.role === 'instructor' && '• Create and publish courses'}
+            </p>
           </div>
           
           {/* Submit Button */}

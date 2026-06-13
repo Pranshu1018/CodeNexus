@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config/api';
 
 function Pay() {
   const [currency, setCurrency] = useState("INR");
@@ -35,7 +36,7 @@ function Pay() {
 
     try {
       // Create order on your server
-      const response = await fetch("http://localhost:5001/order", {
+      const response = await fetch(`${API_BASE_URL}/order`, {
         method: "POST",
         body: JSON.stringify({
           amount: 1000 * 100, // Convert to paisa
@@ -62,7 +63,7 @@ function Pay() {
           try {
             console.log("Hello")
             const validateRes = await fetch(
-              "http://localhost:5001/order/validate",
+              `${API_BASE_URL}/order/validate`,
               {
                 method: "POST",
                 body: JSON.stringify(response),

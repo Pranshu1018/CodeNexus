@@ -26,6 +26,8 @@ const MentorCall = () => {
   
   const callType = searchParams.get('type') || 'voice';
   const isVideo = callType === 'video';
+  const callId = searchParams.get('callId');
+  const isAnswering = searchParams.get('answer') === 'true';
   
   const [mentor, setMentor] = useState(null);
   const [callStatus, setCallStatus] = useState('connecting'); // connecting, connected, ended
@@ -40,7 +42,7 @@ const MentorCall = () => {
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const callIdRef = useRef(`call_${Date.now()}`);
+  const callIdRef = useRef(callId || `call_${Date.now()}`);
   const durationIntervalRef = useRef(null);
 
   useEffect(() => {
@@ -58,17 +60,55 @@ const MentorCall = () => {
 
   const initializeCall = async () => {
     try {
-      // Get mentor info
-      const mentorData = await getMentorById(mentorId);
-      setMentor(mentorData);
+      // Get mentor/user info based on who we're calling
+      let otherUser;
+      let localStream;
       
-      // Start call
-      const localStream = await webrtcService.startCall(
-        callIdRef.current,
-        userId,
-        mentorId,
-        isVideo
-      );
+      if (isAnswering) {
+        // We're the mentor answering - get caller info
+        otherUser = { name: 'Student', id: mentorId }; // mentorId is actually callerId here
+        
+        // Answer the call
+        localStream = await webrtcService.answerCall(callIdRef.current, isVideo);
+        
+        // Listen for remote stream
+        setTimeout(() => {
+          const remoteStream = webrtcService.getRemoteStream();
+          if (remoteStream && remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        }, 1000);
+        
+      } else {
+        // We're the student initiating call
+        const mentorData = await getMentorById(mentorId);
+        otherUser = mentorData;
+        setMentor(mentorData);
+        
+        // Get user info for caller name
+        const authInfo = JSON.parse(localStorage.getItem('authInfo') || '{}');
+        const userName = authInfo.displayName || authInfo.email || 'Student';
+        
+        // Start call with names
+        localStream = await webrtcService.startCall(
+          callIdRef.current,
+          userId,
+          mentorId,
+          isVideo,
+          userName,
+          mentorData.name
+        );
+        
+        // Listen for remote stream
+        setTimeout(() => {
+          const remoteStream = webrtcService.getRemoteStream();
+          if (remoteStream && remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        }, 2000);
+      }
+      
+      setMentor(otherUser);
       
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = localStream;
@@ -76,19 +116,15 @@ const MentorCall = () => {
       
       // Subscribe to call status
       webrtcService.subscribeToCallStatus(callIdRef.current, (status) => {
-        if (status.status === 'connected') {
+        console.log('Call status:', status.status);
+        if (status.status === 'connected' || status.status === 'accepted') {
           setCallStatus('connected');
           startDurationTimer();
+        } else if (status.status === 'ended') {
+          setCallStatus('ended');
+          endCall();
         }
       });
-      
-      // Listen for remote stream
-      setTimeout(() => {
-        const remoteStream = webrtcService.getRemoteStream();
-        if (remoteStream && remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStream;
-        }
-      }, 1000);
       
     } catch (error) {
       console.error('Error initializing call:', error);

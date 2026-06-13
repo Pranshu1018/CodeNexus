@@ -44,6 +44,8 @@ import AdminDashboard from './pages/AdminDashboard'
 import MentorChat from './pages/MentorChat'
 import MentorCall from './pages/MentorCall'
 import AddMentorsPage from './pages/AddMentorsPage'
+import MentorDashboard from "./pages/MentorDashboard"
+import MentorRegistration from './pages/MentorRegistration'
 
 // import Animation from './pages/Checking/Animation'
 import Course from './pages/Course'
@@ -116,6 +118,8 @@ function App() {
           <Route path="/mentor-chat/:mentorId" element={<MentorChat />} />
           <Route path="/mentor-call/:mentorId" element={<MentorCall />} />
           <Route path="/add-mentors" element={<AddMentorsPage />} />
+          <Route path="/mentor-dashboard" element={<MentorDashboard />} />
+          <Route path="/mentor-registration" element={<MentorRegistration />} />
         
         </Routes>
         <Footer />

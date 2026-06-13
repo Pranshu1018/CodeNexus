@@ -74,7 +74,7 @@ class WebRTCService {
   /**
    * Start a call (caller)
    */
-  async startCall(callId, callerId, receiverId, isVideo = false) {
+  async startCall(callId, callerId, receiverId, isVideo = false, callerName = '', receiverName = '') {
     try {
       this.callId = callId;
       
@@ -89,6 +89,8 @@ class WebRTCService {
       await setDoc(callDoc, {
         callerId,
         receiverId,
+        callerName: callerName || 'Student',
+        receiverName: receiverName || 'Mentor',
         isVideo,
         status: 'calling',
         createdAt: serverTimestamp()
