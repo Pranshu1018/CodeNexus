@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
 
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
 function Pay() {
   const [currency, setCurrency] = useState("INR");
   const [receiptId, setReceiptId] = useState("order_receipt_123"); // Change to your actual receipt logic
@@ -52,7 +54,7 @@ function Pay() {
 
       // Razorpay payment options
       const options = {
-        key: "rzp_test_RREPD8PGJzogfo",
+        key: RAZORPAY_KEY_ID,
         amount: 500,
         currency,
         name: "Acme Corp",
